@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Matches — Discover</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="logo" onclick="scrollToTop()"><span class="dot"></span>matches</div>
+    <nav class="nav">
+      <a class="active" id="nav-discover" onclick="scrollToTop()">Discover</a>
+      <a id="nav-shade" href="shade-finder.html">Shade Finder</a>
+      <a id="nav-brands" href="brands.html">Brands</a>
+    </nav>
+    <div class="topbar-actions">
+      <a class="icon-btn" href="bookmarks.html" title="Bookmarks" style="position:relative;text-decoration:none">
+        <svg fill="none" viewBox="0 0 24 24" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M5 5.25A2.25 2.25 0 017.25 3h9.5A2.25 2.25 0 0119 5.25V21l-7-4-7 4V5.25z"/></svg>
+        <span class="notif-badge dark" id="bookmarkBadge" style="display:none">0</span>
+      </a>
+      <button class="icon-btn" title="Notifications" onclick="openNotifications()" style="position:relative">
+        <svg fill="none" viewBox="0 0 24 24" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7C18 5.16 14.866 2 11 2S4 5.16 4 9.05v.7a8.967 8.967 0 01-2.312 6.022 23.85 23.85 0 005.454 1.31m6.715 0a3 3 0 11-6.715 0m6.715 0a9.97 9.97 0 01-6.715 0"/></svg>
+        <span class="notif-badge" id="notifBadge">3</span>
+      </button>
+      <div id="userAvatarBtn" onclick="handleProfileClick()" style="display:none">
+        <div class="avatar-btn" id="topAvatarDisplay"></div>
+      </div>
+      <button class="icon-btn" id="loginBtn" onclick="openLogin()" title="Login">
+        <svg fill="none" viewBox="0 0 24 24" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20.118a7.5 7.5 0 0115 0A17.93 17.93 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="page active" id="page-home">
+  <section class="hero">
+    <div class="eyebrow">shade intelligence engine</div>
+    <h1 class="hero-h">Your skin,<br/><em>perfectly matched.</em></h1>
+    <div class="search-wrap">
+      <form class="search-form" onsubmit="doSearch(event)">
+        <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.343-4.343m0 0A8 8 0 105.343 5.343a8 8 0 0011.314 11.314z"/></svg>
+        <input id="searchInput" type="text" placeholder='Search product, brand, or shade — e.g. "Skintint Rose All Day"'/>
+        <button class="search-btn" type="submit">Search
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 12h15"/></svg>
+        </button>
+      </form>
+    </div>
+    <div class="search-suggest">
+      <span>Popular:</span>
+      <button class="chip" onclick="searchFor('Skintint Rose All Day')">Skintint Rose All Day</button>
+      <button class="chip" onclick="searchFor('Cushion Somethinc')">Cushion Somethinc</button>
+      <button class="chip" onclick="searchFor('Wardah Lightening')">Wardah Lightening</button>
+      <button class="chip" onclick="searchFor('Maybelline Fit Me')">Maybelline Fit Me</button>
+      <button class="chip" onclick="searchFor('Make Over Powerstay')">Make Over Powerstay</button>
+    </div>
+  </section>
+
+  <section class="cats">
+    <div class="cats-row">
+      <button class="cat" onclick="openCategory('Base')">Base</button>
+      <button class="cat" onclick="openCategory('Face')">Face</button>
+      <button class="cat" onclick="openCategory('Eye')">Eye</button>
+      <button class="cat" onclick="openCategory('Lip')">Lip</button>
+      <button class="cat" onclick="openCategory('Brow')">Brow</button>
+      <button class="cat" onclick="openCategory('Tools')">Tools</button>
+    </div>
+  </section>
+
+  <section class="section" id="discoverResults" style="display:none">
+    <div class="search-header">
+      <div class="eyebrow" id="resultsEyebrow">search results</div>
+      <h2 id="resultsTitle"></h2>
+      <p id="resultsMeta"></p>
+    </div>
+    <div class="results-grid" id="resultsGrid"></div>
+  </section>
+
+  <section class="section">
+    <div class="sec-head">
+      <div><h2>Trending this week</h2></div>
+      <div class="tabs" id="feedTabs">
+        <button class="on" onclick="switchTab(this,'forYou')">For You</button>
+        <button onclick="switchTab(this,'hype')">Hype</button>
+        <button onclick="switchTab(this,'reviews')">Reviews</button>
+      </div>
+    </div>
+    <div class="thread-feed feed-grid" id="feedGrid"></div>
+  </section>
+
+  <footer>
+    <div>© 2026 matches studio · find your shade.</div>
+    <div class="links">
+      <a onclick="alert('About — coming soon')">About</a>
+      <a onclick="alert('Brands — coming soon')">Brands</a>
+      <a onclick="alert('For Creators — coming soon')">For Creators</a>
+      <a onclick="alert('Privacy — coming soon')">Privacy</a>
+    </div>
+  </footer>
+</div>
+
+<button class="fab" title="New post" onclick="openNewPost()">
+  <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+</button>
+
+<div class="overlay" id="loginOverlay">
+  <div class="modal modal-sm">
+    <button class="close-btn" onclick="closeModal('loginOverlay')"><svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+    <div class="modal-logo"><span class="dot"></span>matches</div>
+    <h3>Welcome back</h3>
+    <p class="sub">Sign in to save your shades</p>
+    <div class="seg">
+      <button class="on" onclick="loginSegSwitch(this,'email')">Email</button>
+      <button onclick="loginSegSwitch(this,'phone')">Phone</button>
+    </div>
+    <div id="loginFieldEmail" class="field"><label>Email</label><input type="email" id="loginEmail" placeholder="you@email.com"/></div>
+    <div id="loginFieldPhone" class="field" style="display:none"><label>Phone</label><input type="tel" id="loginPhone" placeholder="+62 812 3456 7890"/></div>
+    <div class="field"><label>Password</label><input type="password" id="loginPassword" placeholder="••••••••"/></div>
+    <button class="btn-primary" onclick="doLogin()">Sign In</button>
+    <div class="divider">or</div>
+    <div class="social-btns">
+      <button onclick="doSocialLogin('Google')"><svg width="15" height="15" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.99.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.83z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z"/></svg>Google</button>
+      <button onclick="doSocialLogin('Apple')"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701z"/></svg>Apple</button>
+    </div>
+    <p class="fine-p">Don't have an account? <a onclick="openSignup()">Sign up</a></p>
+  </div>
+</div>
+
+<div class="overlay" id="signupOverlay">
+  <div class="modal modal-sm">
+    <button class="close-btn" onclick="closeModal('signupOverlay')"><svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+    <div class="modal-logo"><span class="dot"></span>matches</div>
+    <h3>Create account</h3>
+    <p class="sub">Join the shade community</p>
+    <div class="field"><label>Display Name</label><input type="text" id="signupDisplayName" placeholder="Your Name"/></div>
+    <div class="field"><label>Username</label><input type="text" id="signupUsername" placeholder="@yourusername"/></div>
+    <div class="field"><label>Email</label><input type="email" id="signupEmail" placeholder="you@email.com"/></div>
+    <div class="field"><label>Password</label><input type="password" id="signupPwd" placeholder="••••••••"/></div>
+    <button class="btn-primary" onclick="doSignup()">Create Account</button>
+    <p class="fine-p">Already have an account? <a onclick="openLogin()">Sign in</a></p>
+  </div>
+</div>
+
+<div class="overlay" id="newPostOverlay">
+  <div class="modal">
+    <button class="close-btn" onclick="closeModal('newPostOverlay')"><svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+    <h3>New Post</h3>
+    <div style="height:8px"></div>
+    <div class="field">
+      <label>What's on your mind?</label>
+      <textarea id="newPostText" rows="5" placeholder="Share thoughts, review, atau swatch. Tag akun pakai @username dan produk/brand pakai #SkintintRose langsung di caption."></textarea>
+      <div class="hint">Tip: ketik <b>@nama</b> untuk tag akun atau <b>#brand</b> untuk tag produk — langsung di caption, no extra field.</div>
+    </div>
+    <div class="field">
+      <label>Photos (optional)</label>
+      <div class="np-photos" id="npPhotos">
+        <div class="np-add" onclick="document.getElementById('npFileInput').click()">+</div>
+      </div>
+      <input type="file" id="npFileInput" accept="image/*" multiple style="display:none" onchange="handleNpPhotoAdd(event)"/>
+      <div class="hint">Multi-foto akan ditampilkan sebagai carousel yang bisa digeser, bukan grid.</div>
+    </div>
+    <button class="btn-primary" onclick="submitPost()">Post</button>
+  </div>
+</div>
+
+<script>
+// =============================================
+// KONFIGURASI & INISIALISASI SUPABASE
+// =============================================
+const SUPABASE_URL = "https://cxzrrrcksrzdpfhlheld.supabase.co"; 
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4enJycmNrc3J6ZHBo..."; // <--- Tempel key panjang kamu di sini
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function loadProductsFromSupabase() {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*');
+
+    if (error) throw error;
+
+    if (data && data.length > 0) {
+      // Ambil elemen kontainer grid brand dari halaman HTML kamu
+      const brandsGrid = document.querySelector('#page-brands .brands-grid');
+
+      data.forEach(dbProduct => {
+        // 1. Masukkan produk ke array utama jika belum ada
+        const exists = PRODUCTS.some(p => p.id === dbProduct.id);
+        if (!exists) {
+          PRODUCTS.push({
+            id: dbProduct.id,
+            brand: dbProduct.brand,
+            name: dbProduct.name,
+            category: dbProduct.category,
+            image: dbProduct.image_url || dbProduct.img || 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?q=80&w=500&auto=format&fit=crop', 
+            description: dbProduct.description || dbProduct.desc || '',
+            shades: dbProduct.shades || [],
+            matches: dbProduct.matches || []
+          });
+        }
+
+        // 2. OTOMATIS buatkan kartu HTML baru di halaman Brands jika belum ada tombolnya
+        if (dbProduct.brand && !BRANDS.includes(dbProduct.brand)) {
+          BRANDS.push(dbProduct.brand);
+
+          if (brandsGrid) {
+            // Membuat elemen kartu baru untuk brand dari Supabase
+            const brandCard = document.createElement('div');
+            brandCard.className = 'brand-card';
+            // Menambahkan fungsi klik agar ketika diklik, dia akan membuka produk milik brand tersebut
+            brandCard.setAttribute('onclick', `openBrandProducts('${dbProduct.brand}')`);
+            
+            // Isi tampilan di dalam kartu brand (menggunakan huruf depan sebagai logo sementara/placeholder)
+            brandCard.innerHTML = `
+              <div class="brand-logo-circle">${dbProduct.brand.charAt(0).toUpperCase()}</div>
+              <div class="brand-card-name">${dbProduct.brand}</div>
+            `;
+            
+            // Masukkan kartu baru ke dalam grid halaman brand
+            brandsGrid.appendChild(brandCard);
+          }
+        }
+      });
+
+      console.log("Supabase sukses memuat produk & membuat elemen brand baru:", PRODUCTS);
+
+      // Refresh tampilan feed jika diperlukan
+      if (typeof renderFeed === 'function') {
+        renderFeed(activeFeedTab); 
+      }
+    }
+  } catch (error) {
+    console.error("Gagal memuat data dari Supabase:", error.message);
+  }
+}
+// Jalankan fungsi saat halaman selesai dimuat
+document.addEventListener('DOMContentLoaded', loadProductsFromSupabase);
+
+// =============================================
+// PRODUCTS
+// =============================================
+const PRODUCTS = [
+  {id:'skintint-rose',brand:'Somethinc',name:'Skintint Rose All Day',category:'Base',img:'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=600&q=80',
+   desc:'A lightweight skin tint with SPF 30 that provides buildable coverage and a natural, dewy finish. The Rose All Day edition features a subtle rosy warmth.',
+   shades:[
+     {name:'01 Porcelain',color:'#f9e2d0',undertone:'Cool Pink',coverage:'Sheer',summary:'Ideal for fair skin with pink undertones. NC10–NC15. Comparable to Wardah Lightening 01.'},
+     {name:'02 Ivory Rose',color:'#f4d1b8',undertone:'Warm Neutral',coverage:'Light',summary:'Most popular shade. NC15–NC20. Fans compare this to YOU Cloud Touch N1.'},
+     {name:'03 Petal',color:'#e8bc9a',undertone:'Warm',coverage:'Light-Medium',summary:'Buildable warm coverage. NC20–NC25.'},
+     {name:'04 Bloom',color:'#d4a07a',undertone:'Neutral Warm',coverage:'Medium',summary:'NC25–NC30. Very natural, oxidizes half-shade warmer.'},
+     {name:'05 Dusk',color:'#b87d52',undertone:'Warm Deep',coverage:'Medium',summary:'NC35–NC40. Deep warm tone, long wear up to 8 hrs.'},
+   ],
+   matches:[
+     {name:'N1 Sand Glow',brand:'YOU · Cloud Touch',color:'#e8b882',pct:94},
+     {name:'02 Natural Rose',brand:'Make Over · Powerstay',color:'#e6b87c',pct:91},
+     {name:'W20 True Beige',brand:'Maybelline · Fit Me',color:'#e2b474',pct:88},
+     {name:'Light Beige',brand:'Wardah · Lightening',color:'#ddb070',pct:85},
+   ]},
+  {id:'cushion-somethinc',brand:'Somethinc',name:'Skin Paradise Cushion',category:'Base',img:'https://images.unsplash.com/photo-1583241800698-e8ab01830a66?w=600&q=80',
+   desc:'Dewy finish cushion compact with skin-care infused formula. SPF 50+ PA++++. Refillable case design.',
+   shades:[
+     {name:'01 Ivory',color:'#f4d9bf',undertone:'Neutral',coverage:'Light',summary:'Sheer-light coverage. NC10–NC15.'},
+     {name:'02 Beige',color:'#e8c19c',undertone:'Warm Neutral',coverage:'Light-Med',summary:'Community favorite. NC20–NC25. Closest match: Maybelline Fit Me 220.'},
+     {name:'03 Sand',color:'#d4a279',undertone:'Warm',coverage:'Medium',summary:'NC25–NC30. Great for warmth & natural coverage.'},
+     {name:'04 Honey',color:'#b88359',undertone:'Deep Warm',coverage:'Medium',summary:'NC30–NC35. Long wear, deep cushion.'},
+     {name:'05 Caramel',color:'#8d5d3a',undertone:'Rich Warm',coverage:'Medium-Full',summary:'NC40+. Hard to find dupes at this depth locally.'},
+   ],
+   matches:[
+     {name:'220 Natural Beige',brand:'Maybelline · Fit Me',color:'#e6bf99',pct:96},
+     {name:'03 Bone',brand:'Make Over · Powerstay',color:'#e3bd97',pct:93},
+     {name:'N2 Sand',brand:'YOU · Cloud Touch',color:'#dfb78f',pct:91},
+     {name:'Light Beige',brand:'Wardah · Lightening',color:'#d9b189',pct:87},
+   ]},
+  {id:'wardah-lightening',brand:'Wardah',name:'Lightening BB Cream',category:'Base',img:'https://images.unsplash.com/photo-1576426863848-c21f53c60b19?w=600&q=80',
+   desc:'Brightening BB cream with SPF 30 and vitamin C complex. Lightweight, evens skin tone.',
+   shades:[
+     {name:'Light Beige',color:'#f2cfa3',undertone:'Neutral',coverage:'Light',summary:'Most popular Wardah shade. NC15–NC20.'},
+     {name:'Natural',color:'#e4b88a',undertone:'Neutral Warm',coverage:'Light-Med',summary:'NC22–NC27. Pulls warm on oily skin.'},
+     {name:'Beige',color:'#d4a070',undertone:'Warm',coverage:'Med',summary:'NC28–NC33.'},
+   ],
+   matches:[
+     {name:'02 Beige',brand:'Somethinc · Skin Paradise',color:'#e8c19c',pct:92},
+     {name:'N2 Sand',brand:'YOU · Cloud Touch',color:'#dfb78f',pct:89},
+     {name:'03 Petal',brand:'Somethinc · Skintint Rose',color:'#e8bc9a',pct:86},
+   ]},
+  {id:'maybelline-fitme',brand:'Maybelline',name:'Fit Me Cushion',category:'Base',img:'https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=600&q=80',
+   desc:'Globally loved cushion in Indonesian-friendly shades. Buildable coverage, oil-control, SPF 50.',
+   shades:[
+     {name:'110 Porcelain',color:'#f8e0cc',undertone:'Cool',coverage:'Light',summary:'NC10–NC12. Cool undertone. Rare locally.'},
+     {name:'220 Natural Beige',color:'#e6bf99',undertone:'Warm Neutral',coverage:'Light-Med',summary:'Best seller. NC20–NC25.'},
+     {name:'310 Sun Beige',color:'#d0a278',undertone:'Warm',coverage:'Med',summary:'NC28–NC33.'},
+     {name:'330 Toffee',color:'#b8845a',undertone:'Warm Deep',coverage:'Med',summary:'NC35–NC40.'},
+   ],
+   matches:[
+     {name:'02 Beige',brand:'Somethinc · Skin Paradise',color:'#e8c19c',pct:95},
+     {name:'03 Petal',brand:'Somethinc · Skintint Rose',color:'#e8bc9a',pct:91},
+     {name:'03 Bone',brand:'Make Over · Powerstay',color:'#e3bd97',pct:89},
+   ]},
+  {id:'make-over-powerstay',brand:'Make Over',name:'Powerstay Weightless',category:'Face',img:'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=600&q=80',
+   desc:'Ultra-long-wear foundation with oil-control technology. Up to 24-hour wear, matte finish.',
+   shades:[
+     {name:'02 Sand',color:'#f0c99a',undertone:'Neutral',coverage:'Light-Med',summary:'NC18–NC23. Great for combo skin.'},
+     {name:'03 Bone',color:'#e3bd97',undertone:'Warm Neutral',coverage:'Medium',summary:'NC23–NC28. Often recommended as Fit Me 220 dupe.'},
+     {name:'04 Caramel',color:'#d09c6e',undertone:'Warm',coverage:'Med-Full',summary:'NC30–NC35. Strong oil control.'},
+     {name:'05 Tawny',color:'#b87850',undertone:'Deep Warm',coverage:'Full',summary:'NC38+.'},
+   ],
+   matches:[
+     {name:'02 Ivory Rose',brand:'Somethinc · Skintint Rose',color:'#f4d1b8',pct:93},
+     {name:'220 Natural Beige',brand:'Maybelline · Fit Me',color:'#e6bf99',pct:91},
+     {name:'02 Beige',brand:'Somethinc · Skin Paradise',color:'#e8c19c',pct:90},
+   ]},
+  {id:'you-cloudtouch',brand:'YOU',name:'Cloud Touch Skin Tint',category:'Base',img:'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=600&q=80',
+   desc:'Featherlight skin tint with cloud-like texture. SPF 35 PA+++. Aloe & ceramides.',
+   shades:[
+     {name:'N1 Vanilla',color:'#f5dfc2',undertone:'Neutral',coverage:'Sheer',summary:'NC12–NC16.'},
+     {name:'N2 Sand',color:'#ebbf98',undertone:'Warm Neutral',coverage:'Light',summary:'Bestseller. NC20–NC26.'},
+     {name:'N3 Almond',color:'#d4a070',undertone:'Warm',coverage:'Light-Med',summary:'NC28–NC34.'},
+   ],
+   matches:[
+     {name:'02 Ivory Rose',brand:'Somethinc · Skintint Rose',color:'#f4d1b8',pct:94},
+     {name:'Light Beige',brand:'Wardah · Lightening',color:'#f2cfa3',pct:90},
+     {name:'03 Petal',brand:'Somethinc · Skintint Rose',color:'#e8bc9a',pct:87},
+   ]},
+  // Eye category
+  {id:'eye-implora-palette',brand:'Implora',name:'Soft Glam Eyeshadow Palette',category:'Eye',img:'https://images.unsplash.com/photo-1583241800698-e8ab01830a66?w=600&q=80',
+   desc:'9-pan eyeshadow palette dengan kombinasi matte & shimmer untuk look natural sampai glam.',
+   shades:[
+     {name:'Bare',color:'#e8d4c2',undertone:'Warm',coverage:'Matte',summary:'Base shade, super buildable.'},
+     {name:'Honey',color:'#c89060',undertone:'Warm',coverage:'Shimmer',summary:'Crease shade favorit.'},
+     {name:'Mocha',color:'#7a4d33',undertone:'Warm Deep',coverage:'Matte',summary:'Deepen outer corner.'},
+   ],
+   matches:[
+     {name:'Neutral 1',brand:'Make Over · Eyeshadow Quad',color:'#ce9a72',pct:90},
+     {name:'Bronze',brand:'Wardah · Eyexpert',color:'#b87a4a',pct:86},
+   ]},
+  {id:'eye-maybelline-mascara',brand:'Maybelline',name:'Lash Sensational Sky High',category:'Eye',img:'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?w=600&q=80',
+   desc:'Mascara dengan flexible wand, bikin bulu mata panjang & volume tanpa clumping.',
+   shades:[
+     {name:'Very Black',color:'#0a0a0a',undertone:'Cool',coverage:'Volume',summary:'Black pekat, daily go-to.'},
+     {name:'Brownish Black',color:'#2a1a14',undertone:'Warm',coverage:'Natural',summary:'Soft brown untuk look natural.'},
+   ],
+   matches:[
+     {name:'Hypnose',brand:'L\'Oréal',color:'#0c0c0c',pct:92},
+   ]},
+  // Lip category
+  {id:'lip-makeover-matte',brand:'Make Over',name:'Intense Matte Lip Cream',category:'Lip',img:'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?w=600&q=80',
+   desc:'12 nude tones, long-wear matte hingga 8 jam. Tidak mengeringkan.',
+   shades:[
+     {name:'001 Bare',color:'#c89280',undertone:'Neutral',coverage:'Full',summary:'Your-lips-but-better nude.'},
+     {name:'008 Brunette',color:'#a06850',undertone:'Warm',coverage:'Full',summary:'MLBB warm tone.'},
+     {name:'014 Vamp',color:'#7a2030',undertone:'Cool',coverage:'Full',summary:'Berry vamp untuk look bold.'},
+   ],
+   matches:[
+     {name:'Cherry',brand:'Wardah · Exclusive',color:'#a8454a',pct:88},
+     {name:'Nude Pink',brand:'YOU · Lip Cream',color:'#c08070',pct:85},
+   ]},
+  {id:'lip-somethinc-tint',brand:'Somethinc',name:'Mood Lip Serum',category:'Lip',img:'https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=600&q=80',
+   desc:'Tinted lip serum dengan hyaluronic acid. Glossy finish, melembabkan sepanjang hari.',
+   shades:[
+     {name:'01 Pink Soda',color:'#e89090',undertone:'Cool',coverage:'Sheer',summary:'Soft pink, daily wear.'},
+     {name:'02 Berry Mood',color:'#b85068',undertone:'Cool',coverage:'Light',summary:'Berry tint untuk freshness.'},
+     {name:'03 Caramel',color:'#c0735a',undertone:'Warm',coverage:'Sheer',summary:'MLBB warm caramel.'},
+   ],
+   matches:[
+     {name:'Glow Tint',brand:'YOU · Lip',color:'#d07a78',pct:87},
+   ]},
+  // Brow
+  {id:'brow-makeover-pencil',brand:'Make Over',name:'Browliner Pencil',category:'Brow',img:'https://images.unsplash.com/photo-1631730486572-226d1f595b68?w=600&q=80',
+   desc:'Pensil alis dual-end dengan spoolie. Hasil natural hair-like strokes.',
+   shades:[
+     {name:'Soft Brown',color:'#a07a5a',undertone:'Warm',coverage:'Natural',summary:'Untuk rambut hitam-coklat.'},
+     {name:'Dark Brown',color:'#5a3a26',undertone:'Neutral',coverage:'Defined',summary:'Untuk rambut hitam pekat.'},
+   ],
+   matches:[
+     {name:'Brow Definer',brand:'Wardah',color:'#704a30',pct:90},
+   ]},
+  // Face (cheek/contour)
+  {id:'face-implora-blush',brand:'Implora',name:'Cheek Pop Blush',category:'Face',img:'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=600&q=80',
+   desc:'Powder blush dengan finish satin natural. Buildable, tidak chalky.',
+   shades:[
+     {name:'Peach',color:'#f0a585',undertone:'Warm',coverage:'Natural',summary:'Soft peach daily.'},
+     {name:'Rose',color:'#d87a8a',undertone:'Cool',coverage:'Natural',summary:'Pink rose flush.'},
+     {name:'Coral',color:'#e88560',undertone:'Warm',coverage:'Buildable',summary:'Sunny coral.'},
+   ],
+   matches:[
+     {name:'Blush On',brand:'Wardah',color:'#e09080',pct:86},
+   ]},
+  // Tools
+  {id:'tools-somethinc-sponge',brand:'Somethinc',name:'Beauty Sponge Set',category:'Tools',img:'https://images.unsplash.com/photo-1631214540335-c4adb16e9c10?w=600&q=80',
+   desc:'Set sponge latex-free untuk apply foundation, cushion, concealer.',
+   shades:[{name:'Pink',color:'#f0a8b0',undertone:'-',coverage:'-',summary:'Soft & bouncy.'}],
+   matches:[]},
+];
+
+// =============================================
+// USERS
+// =============================================
+const USERS = [
+  {handle:'@ayuputri',name:'Ayu Putri',av:'AP',followers:'12.4k',following:'318',bio:'NC22 warm neutral · Jakarta',img:'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&q=80'},
+  {handle:'@reviewbyrara',name:'Rara Reviews',av:'RR',followers:'28.1k',following:'210',bio:'Honest beauty reviews · Bandung',img:'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=80&q=80'},
+  {handle:'@makeupbydhia',name:'Dhia',av:'D',followers:'3.1k',following:'450',bio:'Makeup enthusiast · Skin tint hoarder',img:''},
+];
+
+// =============================================
+// POSTS (FEED DATA)
+// =============================================
+let POSTS = [
+  {
+    id: 'post-1',
+    userHandle: '@ayuputri',
+    time: '2 hours ago',
+    text: 'Guys, nyobain #SkintintRose shade 02 Ivory Rose ternyata pas banget di undertone aku yang warm neutral! Coverage-nya sheer tapi bisa nutup kemerahan bekas jerawat minor. Ringan pol buat dipake ngantor seharian 😭✨',
+    photos: ['https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=600&q=80'],
+    likes: 142,
+    comments: [
+      {user:'@makeupbydhia', text:'Wah beneran dewy ya kak? Di kulit oily minyakan parah ga?'},
+      {user:'@ayuputri', text:'@makeupbydhia di aku aman sih, diset pake loose powder tipis aja di T-zone'}
+    ]
+  },
+  {
+    id: 'post-2',
+    userHandle: '@reviewbyrara',
+    time: 'Yesterday',
+    text: 'Quick swatch & review #CushionSomethinc shade 02 Beige vs Maybelline Fit Me 220. Hampir mirip banget warnanya! Cushion Somethinc kerasa sedikit lebih melembabkan, finishnya dewy sehat gitu. Kalo Fit Me agak lebih matte dikit.',
+    photos: [
+      'https://images.unsplash.com/photo-1583241800698-e8ab01830a66?w=600&q=80',
+      'https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=600&q=80'
+    ],
+    likes: 389,
+    comments: []
+  }
+];
+
+// =============================================
+// STATE & NAVIGATION
+// =============================================
+let currentUser = null;
+let activeCategory = 'All';
+let searchKeyword = '';
+let currentFeedTab = 'forYou';
+
+function switchTab(btn, tab) {
+  btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  currentFeedTab = tab;
+  renderFeed();
+}
+
+function openCategory(cat) {
+  activeCategory = cat;
+  searchKeyword = '';
+  document.getElementById('searchInput').value = '';
+  
+  const resultsSec = document.getElementById('discoverResults');
+  const resultsGrid = document.getElementById('resultsGrid');
+  const titleEl = document.getElementById('resultsTitle');
+  const eybEl = document.getElementById('resultsEyebrow');
+  const metaEl = document.getElementById('resultsMeta');
+  
+  const filtered = PRODUCTS.filter(p => p.category === cat);
+  
+  eybEl.textContent = "category view";
+  titleEl.textContent = cat + " Products";
+  metaEl.textContent = `Showing ${filtered.length} products found in database`;
+  
+  resultsSec.style.display = '';
+  renderResultsGrid(filtered);
+  
+  resultsSec.scrollIntoView({ behavior: 'smooth' });
+}
+
+function doSearch(e) {
+  if(e) e.preventDefault();
+  const kw = document.getElementById('searchInput').value.trim();
+  if(!kw) return;
+  searchFor(kw);
+}
+
+function searchFor(kw) {
+  searchKeyword = kw;
+  document.getElementById('searchInput').value = kw;
+  activeCategory = 'All';
+  
+  const resultsSec = document.getElementById('discoverResults');
+  const resultsGrid = document.getElementById('resultsGrid');
+  const titleEl = document.getElementById('resultsTitle');
+  const eybEl = document.getElementById('resultsEyebrow');
+  const metaEl = document.getElementById('resultsMeta');
+  
+  const kwLower = kw.toLowerCase();
+  const filtered = PRODUCTS.filter(p => 
+    p.name.toLowerCase().includes(kwLower) || 
+    p.brand.toLowerCase().includes(kwLower) ||
+    p.shades.some(s => s.name.toLowerCase().includes(kwLower))
+  );
+  
+  eybEl.textContent = "search results";
+  titleEl.textContent = `“${kw}”`;
+  metaEl.textContent = `Found ${filtered.length} products matching your query`;
+  
+  resultsSec.style.display = '';
+  renderResultsGrid(filtered);
+  
+  resultsSec.scrollIntoView({ behavior: 'smooth' });
+}
+
+function renderResultsGrid(list) {
+  const grid = document.getElementById('resultsGrid');
+  if(list.length === 0) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;padding:40px;text-align:center;color:var(--text-muted)">No matching products found. Try another keyword.</div>`;
+    return;
+  }
+  
+  grid.innerHTML = list.map(p => {
+    return `
+      <div class="prod-card" onclick="openProductDetail('${p.id}')">
+        <div class="prod-img-wrap">
+          <img src="${p.img}" alt="${p.name}"/>
+          <span class="prod-badge">${p.category}</span>
+        </div>
+        <div class="prod-info">
+          <div class="prod-brand">${p.brand}</div>
+          <div class="prod-name">${p.name}</div>
+          <div class="prod-shades-count">${p.shades.length} shades available</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function openProductDetail(id) {
+  window.location.href = `product-detail.html?id=${id}`;
+}
+
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  document.getElementById('discoverResults').style.display = 'none';
+  document.getElementById('searchInput').value = '';
+}
+
+// =============================================
+// RENDER FEED
+// =============================================
+function renderFeed() {
+  const grid = document.getElementById('feedGrid');
+  let list = [...POSTS];
+  
+  if(currentFeedTab === 'hype') {
+    list.sort((a,b) => b.likes - a.likes);
+  } else if(currentFeedTab === 'reviews') {
+    list = list.filter(p => p.text.includes('#'));
+  }
+  
+  grid.innerHTML = list.map(p => {
+    const u = USERS.find(x => x.handle === p.userHandle) || {name: p.userHandle, img:'', av:'?'};
+    
+    // Parse tags in text
+    let decoratedText = escapeHtml(p.text);
+    decoratedText = decoratedText.replace(/#(\w+)/g, '<span class="hash-tag">#$1</span>');
+    decoratedText = decoratedText.replace(/@(\w+)/g, '<span class="mention-tag">@$1</span>');
+    
+    // Photo Carousel structure
+    let photoHtml = '';
+    if(p.photos && p.photos.length > 0) {
+      if(p.photos.length === 1) {
+        photoHtml = `<div class="feed-photo-single"><img src="${p.photos[0]}" alt=""/></div>`;
+      } else {
+        photoHtml = `
+          <div class="feed-carousel">
+            <div class="feed-carousel-track">
+              ${p.photos.map(ph => `<div class="feed-carousel-slide"><img src="${ph}" alt=""/></div>`).join('')}
+            </div>
+            <div class="feed-carousel-dots">
+              ${p.photos.map((_,idx) => `<span class="dot ${idx===0?'active':''}"></span>`).join('')}
+            </div>
+          </div>
+        `;
+      }
+    }
+    
+    return `
+      <div class="feed-card">
+        <div class="feed-user-row">
+          <div class="feed-avatar">
+            ${u.img ? `<img src="${u.img}" alt=""/>` : `<span>${u.av}</span>`}
+          </div>
+          <div>
+            <div class="feed-user-name">${u.name}</div>
+            <div class="feed-user-meta">${p.userHandle} · ${p.time}</div>
+          </div>
+        </div>
+        <div class="feed-text">${decoratedText}</div>
+        ${photoHtml}
+        <div class="feed-actions">
+          <button class="feed-act-btn" onclick="likePost('${p.id}', this)">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+            <span>${p.likes}</span>
+          </button>
+          <button class="feed-act-btn" onclick="toggleCommentsDisplay('${p.id}')">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a.598 0 01-.655-.07.604 0 01-.245-.453c0-1.2.319-2.34.88-3.324C4.244 15.809 3 13.998 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"/></svg>
+            <span>${p.comments.length}</span>
+          </button>
+        </div>
+        
+        <div class="feed-comments-section" id="comments-${p.id}" style="display:none">
+          <div class="comments-list">
+            ${p.comments.map(c => `
+              <div class="comment-item">
+                <b>${c.user}</b> <span>${escapeHtml(c.text)}</span>
+              </div>
+            `).join('')}
+          </div>
+          <div class="comment-input-row">
+            <input type="text" placeholder="Write a comment..." id="input-comm-${p.id}"/>
+            <button onclick="addComment('${p.id}')">Send</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function likePost(id, btn) {
+  const p = POSTS.find(x => x.id === id);
+  if(!p) return;
+  p.likes++;
+  btn.querySelector('span').textContent = p.likes;
+  btn.classList.add('liked');
+}
+
+function toggleCommentsDisplay(id) {
+  const el = document.getElementById(`comments-${id}`);
+  el.style.display = el.style.display === 'none' ? '' : 'none';
+}
+
+function addComment(id) {
+  const input = document.getElementById(`input-comm-${id}`);
+  const val = input.value.trim();
+  if(!val) return;
+  
+  const p = POSTS.find(x => x.id === id);
+  if(!p) return;
+  
+  p.comments.push({
+    user: currentUser ? currentUser.handle : '@anonymous',
+    text: val
+  });
+  
+  input.value = '';
+  renderFeed();
+  document.getElementById(`comments-${id}`).style.display = '';
+}
+
+// =============================================
+// AUTH MODALS MANAGEMENT
+// =============================================
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+function openLogin() { openModal('loginOverlay'); }
+function openSignup() { closeModal('loginOverlay'); openModal('signupOverlay'); }
+function openNewPost() { 
+  if(!currentUser) {
+    alert("Please sign in first to write a post!");
+    openLogin();
+    return;
+  }
+  openModal('newPostOverlay'); 
+}
+
+function handleProfileClick() {
+  window.location.href = "profile.html";
+}
+
+function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPassword').value;
+  if(!email || !pass) { alert("Please fill all fields"); return; }
+  
+  currentUser = {
+    handle: '@' + email.split('@')[0],
+    name: email.split('@')[0].toUpperCase(),
+    av: email.slice(0,2).toUpperCase(),
+    img: ''
+  };
+  
+  onLoggedIn();
+}
+
+function doSignup() {
+  const name = document.getElementById('signupDisplayName').value.trim();
+  const user = document.getElementById('signupUsername').value.trim();
+  if(!name || !user) { alert("Please complete form"); return; }
+  
+  currentUser = {
+    handle: user.startsWith('@') ? user : '@' + user,
+    name: name,
+    av: name.slice(0,2).toUpperCase(),
+    img: ''
+  };
+  
+  onLoggedIn();
+}
+
+function onLoggedIn() {
+  closeModal('loginOverlay'); 
+  closeModal('signupOverlay');
+  document.getElementById('loginBtn').style.display = 'none';
+  document.getElementById('userAvatarBtn').style.display = '';
+  updateTopAvatar();
+  saveSession();
+}
+
+function updateTopAvatar() {
+  if(!currentUser) return;
+  const el = document.getElementById('topAvatarDisplay');
+  if(currentUser.img) el.innerHTML = `<img src="${currentUser.img}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>`;
+  else el.textContent = currentUser.av;
+}
+
+function loginSegSwitch(btn, tab) {
+  btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('on')); 
+  btn.classList.add('on');
+  document.getElementById('loginFieldEmail').style.display = tab === 'email' ? '' : 'none';
+  document.getElementById('loginFieldPhone').style.display = tab === 'phone' ? '' : 'none';
+}
+
+// =============================================
+// HELPERS
+// =============================================
+function formatN(n) { return n >= 1000 ? (n/1000).toFixed(1)+'k' : n; }
+function escapeHtml(s) { 
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); 
+}
+
+// Session Storage save
+function saveSession() {
+  localStorage.setItem('matches_user', JSON.stringify(currentUser));
+}
+function loadSession() {
+  const saved = localStorage.getItem('matches_user');
+  if(saved) {
+    try {
+      currentUser = JSON.parse(saved);
+      if(currentUser) {
+        document.getElementById('loginBtn').style.display = 'none';
+        document.getElementById('userAvatarBtn').style.display = '';
+        updateTopAvatar();
+      }
+    } catch(e) {}
+  }
+}
+
+// New Post Photo Add handler
+let uploadedPhotosBase64 = [];
+function handleNpPhotoAdd(e) {
+  const files = e.target.files;
+  if(!files) return;
+  
+  const container = document.getElementById('npPhotos');
+  for(let i=0; i<files.length; i++) {
+    const f = files[i];
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      uploadedPhotosBase64.push(evt.target.result);
+      
+      const thumb = document.createElement('div');
+      thumb.className = 'np-photo-thumb';
+      thumb.innerHTML = `<img src="${evt.target.result}" alt=""/><span class="del" onclick="removeNpPhoto(${uploadedPhotosBase64.length-1}, this)">&times;</span>`;
+      container.insertBefore(thumb, container.firstChild);
+    };
+    reader.readAsDataURL(f);
+  }
+}
+
+function removeNpPhoto(idx, btn) {
+  uploadedPhotosBase64.splice(idx, 1);
+  btn.parentElement.remove();
+}
+
+function submitPost() {
+  const text = document.getElementById('newPostText').value.trim();
+  if(!text && uploadedPhotosBase64.length === 0) {
+    alert("Post cannot be empty!");
+    return;
+  }
+  
+  const newPost = {
+    id: 'post-' + Date.now(),
+    userHandle: currentUser ? currentUser.handle : '@anonymous',
+    time: 'Just now',
+    text: text,
+    photos: [...uploadedPhotosBase64],
+    likes: 0,
+    comments: []
+  };
+  
+  POSTS.unshift(newPost);
+  document.getElementById('newPostText').value = '';
+  uploadedPhotosBase64 = [];
+  
+  // Clear preview thumbs except the plus button
+  const container = document.getElementById('npPhotos');
+  container.querySelectorAll('.np-photo-thumb').forEach(el => el.remove());
+  
+  closeModal('newPostOverlay');
+  renderFeed();
+}
+
+// =============================================
+// INITIALIZE
+// =============================================
+loadSession();
+renderFeed();
+</script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Matches — Bookmarks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- TOP NAVIGATION BAR -->
+<header class="top-nav">
+  <button class="back-btn" onclick="history.back()">
+    <svg viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+    Back
+  </button>
+</header>
+
+<!-- BOOKMARKS — full-page layout (no longer a small centered popup) -->
+<section class="section" style="margin-top:90px">
+  <div class="sec-head">
+    <div>
+      <div class="eyebrow">saved for later</div>
+      <h2>Bookmarks</h2>
+    </div>
+  </div>
+  <p style="color:var(--soft);font-size:14px;margin:-8px 0 22px">Postingan & review yang kamu simpan</p>
+  <div class="bookmark-tabs">
+    <button class="on" onclick="bookmarkTab(this,'posts')">Posts</button>
+    <button onclick="bookmarkTab(this,'reviews')">Reviews</button>
+  </div>
+  <div id="bookmarksContent"></div>
+</section>
+
+<script src="app.js"></script>
+</body>
+</html>
