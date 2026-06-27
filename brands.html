@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Matches — Brands</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="logo" href="index.html" style="text-decoration:none"><span class="dot"></span>matches</a>
+    <nav class="nav">
+      <a id="nav-discover" href="index.html">Discover</a>
+      <a id="nav-shade" href="shade-finder.html">Shade Finder</a>
+      <a class="active" id="nav-brands">Brands</a>
+    </nav>
+    <div class="topbar-actions">
+      <a class="icon-btn" href="bookmarks.html" title="Bookmarks" style="position:relative;text-decoration:none">
+        <svg fill="none" viewBox="0 0 24 24" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M5 5.25A2.25 2.25 0 017.25 3h9.5A2.25 2.25 0 0119 5.25V21l-7-4-7 4V5.25z"/></svg>
+      </a>
+      <button class="icon-btn" title="Notifications" onclick="comingSoon('Notifications')" style="position:relative">
+        <svg fill="none" viewBox="0 0 24 24" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7C18 5.16 14.866 2 11 2S4 5.16 4 9.05v.7a8.967 8.967 0 01-2.312 6.022 23.85 23.85 0 005.454 1.31m6.715 0a3 3 0 11-6.715 0m6.715 0a9.97 9.97 0 01-6.715 0"/></svg>
+      </button>
+      <a class="icon-btn" href="profile.html" title="Profile" style="text-decoration:none">
+        <svg fill="none" viewBox="0 0 24 24" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20.118a7.5 7.5 0 0115 0A17.93 17.93 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
+      </a>
+    </div>
+  </div>
+</header>
+
+<!-- BRANDS PAGE -->
+<div class="cat-page">
+  <div class="eyebrow" style="margin-bottom:10px">all brands</div>
+  <div style="font-family:'Cormorant Garamond',serif;font-size:44px;font-weight:500;letter-spacing:-.4px;margin-bottom:22px">Brands</div>
+
+  <!-- SEARCH BAR (senada / sama persis gaya search bar di index.html) -->
+  <div class="search-wrap" style="margin-bottom:14px">
+    <form class="search-form" onsubmit="doBrandSearch(event)">
+      <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.343-4.343m0 0A8 8 0 105.343 5.343a8 8 0 0011.314 11.314z"/></svg>
+      <input id="brandSearchInput" type="text" placeholder='Search brand or product — e.g. "Wardah", "Skintint Rose All Day"'/>
+      <button class="search-btn" type="submit">Search
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 12h15"/></svg>
+      </button>
+    </form>
+  </div>
+  <div class="search-suggest" style="margin-bottom:28px">
+    <span>Popular:</span>
+    <button class="chip" onclick="quickBrandSearch('Somethinc')">Somethinc</button>
+    <button class="chip" onclick="quickBrandSearch('Wardah')">Wardah</button>
+    <button class="chip" onclick="quickBrandSearch('Maybelline')">Maybelline</button>
+    <button class="chip" onclick="quickBrandSearch('Indonesian')">Indonesian</button>
+    <button class="chip" onclick="quickBrandSearch('International')">International</button>
+  </div>
+
+  <div id="brandsEmpty" class="empty-state" style="display:none">Brand tidak ditemukan. Coba kata kunci lain.</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px" id="brandsGrid"></div>
+</div>
+
+<script>
+// =============================================
+// BRANDS
+// =============================================
+const BRANDS = [
+  {name:'Somethinc',cat:'Indonesian · Premium',color:'#f0ede6'},
+  {name:'Wardah',cat:'Indonesian · Halal',color:'#e8f0ec'},
+  {name:'YOU Beauty',cat:'Indonesian · Trendy',color:'#f0e8ec'},
+  {name:'Make Over',cat:'Indonesian · Professional',color:'#ede8f0'},
+  {name:'Maybelline',cat:'International · Drugstore',color:'#f0ede0'},
+  {name:'L\'Oréal',cat:'International · Premium',color:'#f0e8e0'},
+  {name:'NYX',cat:'International · Pro',color:'#e8e8f0'},
+  {name:'Implora',cat:'Indonesian · Budget',color:'#ecf0e8'},
+];
+
+function comingSoon(label){ alert(label+' — tersedia di halaman lengkap aplikasi (tidak disertakan dalam file brands ini).'); }
+
+function renderBrands(list){
+  const grid = document.getElementById('brandsGrid');
+  const empty = document.getElementById('brandsEmpty');
+  if(list.length===0){ grid.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  grid.innerHTML = list.map(b=>`
+    <div style="background:${b.color};border:1px solid var(--line);border-radius:14px;padding:20px;cursor:pointer;transition:.2s"
+      onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform=''"
+      onclick="goSearchProduct('${b.name}')">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500;margin-bottom:4px">${b.name}</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted)">${b.cat}</div>
+    </div>`).join('');
+}
+function filterBrands(q){
+  document.getElementById('brandSearchInput').value=q;
+  if(!q){ renderBrands(BRANDS); return; }
+  const filtered = BRANDS.filter(b=>b.name.toLowerCase().includes(q.toLowerCase())||b.cat.toLowerCase().includes(q.toLowerCase()));
+  renderBrands(filtered);
+}
+function doBrandSearch(e){
+  e.preventDefault();
+  const q = document.getElementById('brandSearchInput').value.trim();
+  if(!q){ renderBrands(BRANDS); return; }
+  // exact/near match on a known brand -> go straight to the real product search on index.html
+  const exact = BRANDS.find(b=>b.name.toLowerCase()===q.toLowerCase());
+  if(exact){ goSearchProduct(exact.name); return; }
+  filterBrands(q);
+}
+function quickBrandSearch(q){ filterBrands(q); }
+function goSearchProduct(q){ location.href = 'index.html?q='+encodeURIComponent(q); }
+
+// =============================================
+// INIT
+// =============================================
+renderBrands(BRANDS);
+</script>
+</body>
+</html>
