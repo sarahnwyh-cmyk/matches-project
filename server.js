@@ -1,12 +1,8 @@
-require('dotenv').config({ path: '.env' }); // rename your _env file to .env locally
+require('dotenv').config({ path: '.env' });
 const express  = require('express');
 const cors     = require('cors');
 const { createClient } = require('@supabase/supabase-js');
 
-// ── Supabase ───────────────────────────────────────────────────────────────
-// Make sure SUPABASE_URL and SUPABASE_ANON_KEY are set:
-//   • Locally  : in a file named ".env" (rename _env → .env)
-//   • Vercel   : Settings → Environment Variables in the dashboard
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_ANON_KEY
@@ -17,9 +13,6 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
-
-// Serve all static HTML/CSS/JS files from the project root
-// (lets you open the site at http://localhost:3000 locally)
 app.use(express.static('.'));
 
 // ── /api/products ──────────────────────────────────────────────────────────
@@ -37,7 +30,8 @@ app.get('/api/products', async (req, res) => {
       brand:    row.brand,
       name:     row.name,
       category: row.category,
-      img:      row.image_url   || '',
+      // BUG FIX: image_url adalah text[] (array). Ambil elemen pertama.
+      img:      (Array.isArray(row.image_url) ? row.image_url[0] : row.image_url) || '',
       desc:     row.description || '',
       shades:   Array.isArray(row.shades)  ? row.shades  : [],
       matches:  Array.isArray(row.matches) ? row.matches : []
@@ -51,8 +45,6 @@ app.get('/api/products', async (req, res) => {
 });
 
 // ── /api/posts ─────────────────────────────────────────────────────────────
-// Returns all published posts joined with the author's profile.
-// The client converts these into the same shape renderThreadPost() expects.
 app.get('/api/posts', async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -69,14 +61,16 @@ app.get('/api/posts', async (req, res) => {
       name:      row.profiles?.display_name || 'User',
       av:        (row.profiles?.display_name || 'U').slice(0, 2).toUpperCase(),
       img:       row.profiles?.avatar_url   || '',
-      time:      row.created_at,   // client formats this with sbTimeAgo()
-      text:      row.text          || '',
-      images:    Array.isArray(row.images) ? row.images : [],
-      likes:     row.likes_count   || 0,
-      comments:  row.comments_count || 0,
+      time:      row.created_at,         // client formats ini dengan sbTimeAgo()
+      text:      row.text                || '',
+      // BUG FIX: Nama kolom di tabel adalah `image` (singular), bukan `images`
+      images:    Array.isArray(row.image) ? row.image : [],
+      likes:     row.likes_count         || 0,
+      // BUG FIX: Nama kolom di tabel adalah `comment_count` (singular), bukan `comments_count`
+      comments:  row.comment_count       || 0,
       saves:     0,
-      productId: row.product_id    || null,
-      cat:       row.category      || 'opinion'
+      productId: row.product_id          || null,
+      cat:       row.category            || 'opinion'
     }));
 
     res.json(mapped);

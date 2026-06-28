@@ -473,25 +473,17 @@ async function init(){
   // 2. Build review index with final PRODUCTS
   buildReviewsIndex();
 
-  // 3. Restore bookmark state from Supabase session
+  // 3. Load real posts from DB (via sbFetchPosts yang sudah handle join profiles
+  //    dan mapping kolom yang benar) dan prepend ke FEED_POSTS.forYou
+  const dbPosts = await sbFetchPosts();
+  if(dbPosts && dbPosts.length > 0){
+    FEED_POSTS.forYou = [...dbPosts, ...FEED_POSTS.forYou];
+  }
+
+  // 4. Restore bookmark state from Supabase session
   const session = await sbGetSession();
   if(session){
     currentUserId = await applySessionState(session);
   }
-
-  renderBookmarks();
 }
 init();
-
-// =============================================
-// HELPERS
-// =============================================
-function formatN(n){ return n>=1000?(n/1000).toFixed(1)+'k':n; }
-function escapeHtml(s){ return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-function linkifyCaption(s){
-  // tags @user and #brand get colored
-  return escapeHtml(s)
-    .replace(/(@[a-zA-Z0-9_]+)/g,'<span class="tag">$1</span>')
-    .replace(/(#[a-zA-Z0-9_]+)/g,'<span class="hashtag">$1</span>')
-    .replace(/\n/g,'<br>');
-}

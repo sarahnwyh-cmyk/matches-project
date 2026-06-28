@@ -2,12 +2,14 @@
 // SUPABASE CLIENT — shared by index.html, profile.html, and app.js (bookmarks.html)
 // Loaded after the supabase-js CDN script, before each page's own logic.
 // =============================================================================
+
+// BUG FIX #1: URL tidak boleh punya suffix /rest/v1/
+// createClient() sudah menambahkan path secara internal.
+// URL yang salah menyebabkan semua request ke endpoint yang tidak ada.
 const SUPABASE_URL     = 'https://cxzrrrcksrzdpfhlheld.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_yKPowwmZWHaoJhevzH008g_5RayYnSv';
 
 // Guard: if the CDN failed to load, 'supabase' is undefined.
-// We create a stub 'sb' so nothing crashes at module load time.
-// Every function that uses sb checks SB_READY first and shows a clear error.
 const SB_READY = (typeof supabase !== 'undefined');
 const sb = SB_READY
   ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
@@ -56,9 +58,6 @@ async function sbSignOut(){
   await sb.auth.signOut();
 }
 
-// Fetches the profile row for a user, creating it on first login if it
-// doesn't exist yet (covers the "confirm e-mail" signup flow, where the
-// profile can't be written until the person is actually authenticated).
 async function sbEnsureProfile(user){
   if(!SB_READY) return null;
   if(!SB_READY || !user) return null;
@@ -84,13 +83,19 @@ async function sbUpdateProfile(userId, fields){
 }
 
 // -----------------------------------------------------------------------------
-// POSTS (only real posts the user publishes — the algorithmic demo feed
-// content in PRODUCTS/FEED_POSTS stays exactly as-is, client-side)
+// POSTS
 // -----------------------------------------------------------------------------
+
+// BUG FIX #2: Kolom images di tabel posts bernama `image` (singular), bukan `images`.
+// Menulis ke kolom yang tidak ada menyebabkan data gambar hilang diam-diam.
 async function sbCreatePost({userId, text, images, productId, category}){
   if(!SB_READY) return null;
   const { data, error } = await sb.from('posts').insert({
-    user_id:userId, text, images:images||[], product_id:productId||null, category:category||'opinion'
+    user_id:  userId,
+    text,
+    image:    images||[],       // FIX: nama kolom adalah `image`, bukan `images`
+    product_id: productId||null,
+    category: category||'opinion'
   }).select().single();
   if(error) throw error;
   return data;
@@ -103,9 +108,6 @@ async function sbFetchMyPosts(userId){
   return data;
 }
 
-// Converts a posts-table row into the same shape renderThreadPost() already expects.
-// `user` is the same currentUser-shaped object used everywhere else in the app
-// (displayName / username / avatar), not a raw profiles-table row.
 function sbPostRowToUIPost(row, user){
   return {
     id: row.id,
@@ -115,9 +117,11 @@ function sbPostRowToUIPost(row, user){
     img: user.avatar||'',
     time: sbTimeAgo(row.created_at),
     text: row.text||'',
-    images: row.images||[],
+    // BUG FIX #3: Kolom adalah `image` (singular)
+    images: Array.isArray(row.image) ? row.image : [],
     likes: row.likes_count||0,
-    comments: row.comments_count||0,
+    // BUG FIX #4: Kolom adalah `comment_count` (singular), bukan `comments_count`
+    comments: row.comment_count||0,
     saves: 0,
     productId: row.product_id||null,
     cat: row.category||'opinion'
@@ -212,9 +216,7 @@ async function sbToggleLikePost(userId, postId, currentlyLiked){
 }
 
 // -----------------------------------------------------------------------------
-// Maps a Supabase auth user + profile row into the same `currentUser` shape
-// the existing UI code already expects (displayName, username, bio, avatar,
-// banner, avatarLetters, followers, following, posts).
+// Build currentUser shape from profile row
 // -----------------------------------------------------------------------------
 function sbBuildCurrentUser(profile, followingCount, postsCount){
   return {
@@ -242,10 +244,10 @@ function sbFriendlyError(error){
   return msg;
 }
 
-// Deteksi environment: lokal (localhost) vs production (Vercel / hosting lain)
+// Deteksi environment: lokal vs production
 const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   ? 'http://localhost:3000'
-  : '';  // di Vercel, API route /api/... bersifat relatif
+  : '';
 
 // ── Products ──────────────────────────────────────────────────────────────
 async function sbFetchProducts() {
@@ -255,26 +257,29 @@ async function sbFetchProducts() {
     return await response.json();
   } catch (err) {
     console.warn('sbFetchProducts via API gagal, fallback ke Supabase langsung:', err.message);
-    // Fallback: panggil Supabase langsung dari client jika server tidak jalan
     if (!SB_READY) return null;
     const { data, error } = await sb.from('Product').select('*').order('created_at', { ascending: true });
     if (error) { console.error('sbFetchProducts direct:', error); return null; }
     return data.map(row => ({
-      id: row.id, brand: row.brand, name: row.name, category: row.category,
-      img: row.image_url || '', desc: row.description || '',
-      shades:  Array.isArray(row.shades)  ? row.shades  : [],
-      matches: Array.isArray(row.matches) ? row.matches : []
+      id:       row.id,
+      brand:    row.brand,
+      name:     row.name,
+      category: row.category,
+      // BUG FIX #5: image_url adalah text[] (array). Ambil elemen pertama sebagai string.
+      img:      (Array.isArray(row.image_url) ? row.image_url[0] : row.image_url) || '',
+      desc:     row.description || '',
+      shades:   Array.isArray(row.shades)  ? row.shades  : [],
+      matches:  Array.isArray(row.matches) ? row.matches : []
     }));
   }
 }
 
-// ── Posts (semua post dari database, untuk ditampilkan di feed) ───────────
+// ── Posts ─────────────────────────────────────────────────────────────────
 async function sbFetchPosts() {
   try {
     const response = await fetch(`${API_BASE}/api/posts`);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const rows = await response.json();
-    // Konversi field `time` (ISO string dari DB) ke format relatif seperti "2 jam lalu"
     return rows.map(r => ({ ...r, time: sbTimeAgo(r.time) }));
   } catch (err) {
     console.warn('sbFetchPosts via API gagal, fallback ke Supabase langsung:', err.message);
@@ -286,16 +291,18 @@ async function sbFetchPosts() {
       .limit(60);
     if (error) { console.error('sbFetchPosts direct:', error); return []; }
     return data.map(row => ({
-      id: row.id,
+      id:    row.id,
       user:  row.profiles?.username     || '@user',
       name:  row.profiles?.display_name || 'User',
       av:    (row.profiles?.display_name || 'U').slice(0, 2).toUpperCase(),
       img:   row.profiles?.avatar_url   || '',
       time:  sbTimeAgo(row.created_at),
       text:  row.text   || '',
-      images: Array.isArray(row.images) ? row.images : [],
+      // BUG FIX #3 (fallback): kolom adalah `image` (singular)
+      images: Array.isArray(row.image) ? row.image : [],
       likes:    row.likes_count    || 0,
-      comments: row.comments_count || 0,
+      // BUG FIX #4 (fallback): kolom adalah `comment_count` (singular)
+      comments: row.comment_count  || 0,
       saves: 0,
       productId: row.product_id || null,
       cat: row.category || 'opinion'
