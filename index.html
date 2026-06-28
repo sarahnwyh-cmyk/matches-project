@@ -588,20 +588,21 @@ document.querySelectorAll('.overlay').forEach(ov=>ov.addEventListener('click',e=
 // INIT
 // =============================================
 async function init(){
-  // 1. Load products from Supabase; fall back to the hardcoded array if offline/empty
+  // 1. Load products from Supabase/API; fall back to hardcoded array if unavailable
   const sbProducts = await sbFetchProducts();
   if(sbProducts && sbProducts.length > 0) PRODUCTS = sbProducts;
 
-  const sbPosts = await sbFetchPosts();
-  if(sbPosts && sbPosts.length > 0) {
-        // Masukkan data sbPosts ini ke dalam variabel array posts di file kamu
-      POSTS = sbPosts; 
-  }
-  
-  // 2. Build the algorithmic demo feed now that PRODUCTS is finalised
+  // 2. Build the demo feed skeleton now that PRODUCTS is finalised
   buildFeedPosts();
 
-  // 3. Restore auth session
+  // 3. Load real posts from DB and PREPEND them to the "For You" tab
+  //    so user-published posts appear at the top of the feed.
+  const dbPosts = await sbFetchPosts();
+  if(dbPosts && dbPosts.length > 0){
+    FEED_POSTS.forYou = [...dbPosts, ...FEED_POSTS.forYou];
+  }
+
+  // 4. Restore auth session (adds logged-in user's own posts too)
   const session = await sbGetSession();
   if(session){
     const ok = await applySessionState(session);

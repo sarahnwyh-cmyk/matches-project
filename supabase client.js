@@ -20,23 +20,6 @@ if(!SB_READY){
 // -----------------------------------------------------------------------------
 // AUTH
 // -----------------------------------------------------------------------------
-async function sbFetchPosts() {
-    try {
-        // Mengambil data dari tabel 'posts' kamu
-        const { data, error } = await sb
-            .from('posts') // Sesuaikan dengan nama tabel di Supabase kamu (apakah 'posts' kecil atau 'Posts' besar)
-            .select('*');
-
-        if (error) {
-            throw error;
-        }
-        return data;
-    } catch (err) {
-        console.error('Error fetching posts from Supabase:', err.message);
-        return [];
-    }
-}
-
 async function sbGetSession(){
   if(!SB_READY) return null;
   const { data, error } = await sb.auth.getSession();
@@ -259,21 +242,63 @@ function sbFriendlyError(error){
   return msg;
 }
 
-// KODE BARU MENGGUNAKAN JALUR HYBRID (NODE.JS):
+// Deteksi environment: lokal (localhost) vs production (Vercel / hosting lain)
+const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'http://localhost:3000'
+  : '';  // di Vercel, API route /api/... bersifat relatif
+
+// ── Products ──────────────────────────────────────────────────────────────
 async function sbFetchProducts() {
   try {
-    // Memanggil server Node.js lokal yang berjalan di port 3000
-    const response = await fetch('http://localhost:3000/api/products');
-    
-    if (!response.ok) {
-      throw new Error('Respon dari server backend hibrida tidak OK');
-    }
-    
-    // Server Node.js sudah melakukan mapping, jadi kita tinggal mengambil hasilnya
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Gagal mengambil data produk via Node.js Hybrid:', error);
-    return null;
+    const response = await fetch(`${API_BASE}/api/products`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  } catch (err) {
+    console.warn('sbFetchProducts via API gagal, fallback ke Supabase langsung:', err.message);
+    // Fallback: panggil Supabase langsung dari client jika server tidak jalan
+    if (!SB_READY) return null;
+    const { data, error } = await sb.from('Product').select('*').order('created_at', { ascending: true });
+    if (error) { console.error('sbFetchProducts direct:', error); return null; }
+    return data.map(row => ({
+      id: row.id, brand: row.brand, name: row.name, category: row.category,
+      img: row.image_url || '', desc: row.description || '',
+      shades:  Array.isArray(row.shades)  ? row.shades  : [],
+      matches: Array.isArray(row.matches) ? row.matches : []
+    }));
+  }
+}
+
+// ── Posts (semua post dari database, untuk ditampilkan di feed) ───────────
+async function sbFetchPosts() {
+  try {
+    const response = await fetch(`${API_BASE}/api/posts`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const rows = await response.json();
+    // Konversi field `time` (ISO string dari DB) ke format relatif seperti "2 jam lalu"
+    return rows.map(r => ({ ...r, time: sbTimeAgo(r.time) }));
+  } catch (err) {
+    console.warn('sbFetchPosts via API gagal, fallback ke Supabase langsung:', err.message);
+    if (!SB_READY) return [];
+    const { data, error } = await sb
+      .from('posts')
+      .select('*, profiles(display_name, username, avatar_url)')
+      .order('created_at', { ascending: false })
+      .limit(60);
+    if (error) { console.error('sbFetchPosts direct:', error); return []; }
+    return data.map(row => ({
+      id: row.id,
+      user:  row.profiles?.username     || '@user',
+      name:  row.profiles?.display_name || 'User',
+      av:    (row.profiles?.display_name || 'U').slice(0, 2).toUpperCase(),
+      img:   row.profiles?.avatar_url   || '',
+      time:  sbTimeAgo(row.created_at),
+      text:  row.text   || '',
+      images: Array.isArray(row.images) ? row.images : [],
+      likes:    row.likes_count    || 0,
+      comments: row.comments_count || 0,
+      saves: 0,
+      productId: row.product_id || null,
+      cat: row.category || 'opinion'
+    }));
   }
 }
