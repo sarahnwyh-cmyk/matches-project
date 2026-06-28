@@ -20,6 +20,23 @@ if(!SB_READY){
 // -----------------------------------------------------------------------------
 // AUTH
 // -----------------------------------------------------------------------------
+async function sbFetchPosts() {
+    try {
+        // Mengambil data dari tabel 'posts' kamu
+        const { data, error } = await sb
+            .from('posts') // Sesuaikan dengan nama tabel di Supabase kamu (apakah 'posts' kecil atau 'Posts' besar)
+            .select('*');
+
+        if (error) {
+            throw error;
+        }
+        return data;
+    } catch (err) {
+        console.error('Error fetching posts from Supabase:', err.message);
+        return [];
+    }
+}
+
 async function sbGetSession(){
   if(!SB_READY) return null;
   const { data, error } = await sb.auth.getSession();

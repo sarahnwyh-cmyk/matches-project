@@ -1,7 +1,6 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -9,8 +8,6 @@ const PORT = process.env.PORT || 3000;
 // Agar file HTML lokal Anda diizinkan mengakses data dari server ini
 app.use(cors());
 
-// Inisialisasi Supabase di sisi Backend
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 
 // Endpoint khusus untuk mengambil data produk
 app.get('/api/products', async (req, res) => {

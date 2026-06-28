@@ -592,6 +592,12 @@ async function init(){
   const sbProducts = await sbFetchProducts();
   if(sbProducts && sbProducts.length > 0) PRODUCTS = sbProducts;
 
+  const sbPosts = await sbFetchPosts();
+  if(sbPosts && sbPosts.length > 0) {
+        // Masukkan data sbPosts ini ke dalam variabel array posts di file kamu
+      POSTS = sbPosts; 
+  }
+  
   // 2. Build the algorithmic demo feed now that PRODUCTS is finalised
   buildFeedPosts();
 
